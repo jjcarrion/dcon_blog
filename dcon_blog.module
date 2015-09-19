@@ -20,7 +20,7 @@ function dcon_blog_menu() {
     'page callback' => 'dcon_blog_post',
     'access callback' => TRUE,
   );
-  $items['admin/config/dcon/settings'] = array(
+  $items['admin/config/dcon-settings'] = array(
     'title' => 'Blog settings',
     'type' => MENU_NORMAL_ITEM,
     'page callback' => 'drupal_get_form',
