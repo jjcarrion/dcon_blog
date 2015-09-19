@@ -1,0 +1,119 @@
+<?php
+/**
+ * @file
+ * File that contains the code for the module DCon Example 1.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function dcon_blog_menu() {
+  $items['blog-list'] = array(
+    'title' => 'Blog',
+    'page callback' => 'dcon_blog_list',
+    'access callback' => TRUE,
+    'type' => MENU_NORMAL_ITEM,
+    'menu_name' => 'main-menu',
+  );
+  $items['post'] = array(
+    'title' => 'Post',
+    'page callback' => 'dcon_blog_post',
+    'access callback' => TRUE,
+  );
+  $items['admin/config/dcon/settings'] = array(
+    'title' => 'Blog settings',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('dcon_blog_admin_settings'),
+    'file' => 'dcon_blog.admin.inc',
+    'access arguments' => array('administer dcon blog'),
+  );
+  return $items;
+}
+
+/**
+ * Callback function to show the list of posts.
+ */
+function dcon_blog_list() {
+  $post_list_url = variable_get('dcon_blog_post_list', 'http://jsonplaceholder.typicode.com/posts');
+  $response = drupal_http_request($post_list_url);
+
+  if ($response->code == -1) {
+    $error_message = t('Ooops, we have a problem with the connection');
+    watchdog('dcon_blog', 'The connection to the jsonplaceholder server has failed', array(), WATCHDOG_ERROR);
+    return $error_message;
+  }
+  $data = json_decode($response->data);
+
+  $blog_list = array();
+  foreach ($data as $post) {
+    $blog_list[] = array(
+      'blog_list' => array(
+        '#theme' => 'dcon_blog_list',
+        '#title' => l($post->title, 'post/' . $post->id),
+        '#body' => $post->body,
+      ),
+    );
+  }
+
+  return $blog_list;
+}
+
+/**
+ * Callback function to show a post.
+ */
+function dcon_blog_post($id) {
+  $response = drupal_http_request('http://jsonplaceholder.typicode.com/posts/' . $id);
+  $data = json_decode($response->data);
+
+  $comments = drupal_http_request('http://jsonplaceholder.typicode.com/comments?postId=' . $id);
+  $data_comments = json_decode($comments->data);
+  $post = array();
+  $post[] = array(
+    'post' => array(
+      '#theme' => 'dcon_blog_post',
+      '#title' => $data->title,
+      '#body' => $data->body,
+      '#comments' => $data_comments,
+    ),
+  );
+
+  return $post;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function dcon_blog_theme($existing, $type, $theme, $path) {
+  return array(
+    'dcon_blog_list'  => array(
+      'variables' => array(
+        'title' => NULL,
+        'body' => NULL,
+        'comments' => array(),
+      ),
+      'template' => 'templates/dcon-blog-list',
+    ),
+    'dcon_blog_post'  => array(
+      'variables' => array(
+        'title' => NULL,
+        'body' => NULL,
+        'comments' => array(),
+      ),
+      'template' => 'templates/dcon-blog-post',
+    ),
+  );
+}
+
+/**
+ * Implements hook_permission().
+ */
+function dcon_blog_permission() {
+  return array(
+    'administer dcon blog' => array(
+      'title' => t('Administer dcon blog settings'),
+      'description' => t('Administer the settings for the blog.'),
+      'restrict access' => TRUE,
+    ),
+  );
+}

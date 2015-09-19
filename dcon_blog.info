@@ -1,0 +1,4 @@
+name = DrupalCon Blog
+description = Example module Blog
+core = 7.x
+package = DrupalCon
